@@ -5,13 +5,18 @@
 if(Sys.info()["user"] == "Tomas"){
   dataPath <- "C:/Users/Tomas/Documents/LEI/data/ETH/2011/Data"
 } else {
-  dataPath <- "N:/Internationaal Beleid  (IB)/Projecten/2285000066 Africa Maize Yield Gap/SurveyData/ETH/2011/Data"
+  dataPath <- "D:/Analyses/CIMMYT/NutritionETH/SurveyData/2011/Data/"
 }
+setwd("D:/Analyses/CIMMYT/NutritionETH")
 
 library(haven)
+library(foreign)
+#install.packages("lubridate")
 library(lubridate)
+#install.packages("magrittr")
+library(magrittr)
+library(Deducer) # necessary for descriptives.tables
 library(dplyr)
-
 options(scipen=999)
 
 #######################################
@@ -20,8 +25,11 @@ options(scipen=999)
 
 # file containing the zone, region and district
 
-location <- read_dta(file.path(dataPath, "/sect1_hh_w1.dta")) %>%
-  select(household_id, REGCODE = saq01, ZONECODE = saq02, ea_id, rural) 
+location <- read_dta(file.path(dataPath, "sect1_hh_w1.dta"))
+location <- location[ c("household_id", "saq01", "saq02", "ea_id", "rural") ]
+location$REGCODE <- location$saq01
+location$ZONECODE <- location$saq02
+location <- location[ c("household_id", "REGCODE", "ZONECODE", "ea_id", "rural") ]
 
 # recode the rural variable to match with wave 2
 location$rural <- ifelse(location$rural %in% 1, 1, 2)
@@ -30,9 +38,16 @@ location$rural <- ifelse(location$rural %in% 1, 1, 0)
 location$REGCODE <- as.integer(location$REGCODE)
 location <- unique(location)
 
+descriptive.table(vars = d(rural, REGCODE, ZONECODE),data= location, 
+                  func.names = c("Mean","St. Deviation", "Min", "Max", "Valid N"))
+frequencies(location$type,r.digits=1)
+frequencies(location$REGCODE,r.digits=1)
+
 # match up with the names from the survey (prepared in a seperate file)
 
-REGZONE <- read.csv(file.path(paste0(dataPath,"/../../.."), "Other/Spatial/ETH/REGZONEETH.csv"))
+#VL Adjusted 
+#REGZONE <- read.csv(file.path(paste0(dataPath,"/../../.."), "Other/Spatial/ETH/REGZONEETH.csv"))
+REGZONE <- read.csv(file.path(dataPath, "/../../", "Other/Spatial/ETH/REGZONEETH.csv"))
 
 # join with household identifications
 location <- left_join(location, REGZONE)
@@ -47,51 +62,95 @@ HH11 <- read_dta(file.path(dataPath, "sect1_hh_w1.dta")) %>%
   select(household_id, individual_id,
          ea_id, status=hh_s1q02, sex=hh_s1q03, age=hh_s1q04_a,
          religion=hh_s1q07, marital=hh_s1q08)
+#HH11 <- read_dta(file.path(dataPath, "sect1_hh_w1.dta")) 
+#HH11 <- HH11[ c("household_id", "individual_id", "ea_id", "hh_s1q02", "hh_s1q03", "hh_s1q04_a", "hh_s1q07", "hh_s1q08") ]
+#colnames(HH11)[4:8] <- c("status", "sex", "age", "religion", "marital") 
 
 HH11$status <- toupper(as_factor(HH11$status))
 HH11$religion <- toupper(as_factor(HH11$religion))
 HH11$sex <- toupper(as_factor(HH11$sex)) 
 HH11$marital <- toupper(as_factor(HH11$marital)) 
 
+descriptive.table(vars = d(status, sex, age, religion, marital),data= HH11, 
+                  func.names = c("Mean", "St. Deviation", "Min", "Max", "Valid N"))
+frequencies(HH11$status  ,r.digits=1)
+frequencies(HH11$sex     ,r.digits=1)
+frequencies(HH11$religion,r.digits=1)
+frequencies(HH11$marital ,r.digits=1)
+
 # make a new variable cage (cut age = cage) which splits
 # individuals according to their age group with
 # breaks at 15, 55 and the max age
 
-HH11$cage <- cut(HH11$age, breaks = c(0, 15, 55, max(HH11$age, na.rm=TRUE)),
-                 labels=c("0-15", "16-55", "56+"), include.lowest = TRUE, right = TRUE)
+#HH11$cage <- cut(HH11$age, breaks = c(0, 15, 55, max(HH11$age, na.rm=TRUE)),
+#                 labels=c("0-15", "16-55", "56+"), include.lowest = TRUE, right = TRUE)
+#frequencies(HH11$cage ,r.digits=1)
+# VL revised
+HH11$cage <- cut(HH11$age, breaks = c(0, 5, 15, 55, max(HH11$age, na.rm=TRUE)),
+                 labels=c("0-5", "6-15", "16-55", "56+"), include.lowest = TRUE, right = TRUE)
+frequencies(HH11$cage ,r.digits=1)
 
 # education of household members and sum
 # of education of all household members
 # between the ages of 15 and 55
 
-education <- read_dta(file.path(dataPath, "sect2_hh_w1.dta")) %>%
-  select(household_id, individual_id, ea_id,
-         literate=hh_s2q02, ed_any=hh_s2q03)
+#education <- read_dta(file.path(dataPath, "sect2_hh_w1.dta")) %>%
+#  select(household_id, individual_id, ea_id,
+#         literate=hh_s2q02, ed_any=hh_s2q03)
+education <- read_dta(file.path(dataPath, "sect2_hh_w1.dta")) 
+education <- education[ c("household_id", "individual_id", "ea_id", "hh_s2q02", "hh_s2q03")]
+colnames(education)[4:5] <- c("literate", "ed_any")
+
+frequencies(education$literate ,r.digits=1)
+frequencies(education$ed_any ,r.digits=1)
 
 education$literate <- toupper(as_factor(education$literate))
 education$ed_any <- toupper(as_factor(education$ed_any))
+
+frequencies(education$literate ,r.digits=1)
+frequencies(education$ed_any ,r.digits=1)
 
 # summarise the data: get sum of education
 # of household members 15-55 and number of
 # household members 15:55
 
+library(dplyr)
+#HH11_x <- group_by(HH11, household_id) %>%
+#  summarise(N1555=sum(cage %in% "16-55"),
+#            family_size=n())
+
+#VL: revised
 HH11_x <- group_by(HH11, household_id) %>%
-  summarise(N1555=sum(cage %in% "16-55"),
+  summarise(N0005=sum(cage %in% "0-5"),
+            N0615=sum(cage %in% "6-15"),
+            N1555=sum(cage %in% "16-55"),
+            N5600=sum(cage %in% "56+"),
+            N0005w=sum(cage %in% "0-5" & sex %in% "FEMALE"),
+            N0615w=sum(cage %in% "6-15" & sex %in% "FEMALE"),
+            N1555w=sum(cage %in% "16-55" & sex %in% "FEMALE"),
+            N5600w=sum(cage %in% "56+" & sex %in% "FEMALE"),
             family_size=n())
+frequencies(HH11_x$N0005 ,r.digits=1)
+frequencies(HH11_x$N0615 ,r.digits=1)
+frequencies(HH11_x$N1655 ,r.digits=1)
+frequencies(HH11_x$N5600 ,r.digits=1)
+frequencies(HH11_x$family_size ,r.digits=1)
+
 
 # -------------------------------------
 # death in the family
 # -------------------------------------
 
-death <- read_dta(file.path(dataPath, "sect8_hh_w1.dta")) %>%
+famdeath <- read_dta(file.path(dataPath, "sect8_hh_w1.dta")) %>%
   select(household_id, code=hh_s8q00, death=hh_s8q01) %>% 
   filter(code %in% c("101", "102")) %>% select(-code) %>%
   group_by(household_id) %>%
   summarise(death=ifelse(any(death %in% 1), 1, 0))
+frequencies(famdeath$death ,r.digits=1)
 
 HH11 <- left_join(HH11, education) %>%
   left_join(HH11_x) %>%
-  left_join(death); rm(education, HH11_x, death)
+  left_join(famdeath); rm(education, HH11_x, famdeath)
 
 #######################################
 ############### OUTPUT ################
@@ -113,6 +172,13 @@ oput <- read_dta(file.path(dataPath, "sect9_ph_w1.dta")) %>%
          crop_qty_harv_tot_g=ph_s9q12_b/100,
          harv_month_start=ph_s9q13_a,
          harv_month_end=ph_s9q13_b, crop_name)
+frequencies(oput$crop_code ,r.digits=1)
+frequencies(oput$crop_name ,r.digits=1)
+
+descriptive.table(vars = d(day_cut, month_cut, crop_qty_harv_fresh_kg, crop_qty_harv_fresh_g, crop_qty_harv_dry_kg,
+                           crop_qty_harv_dry_g, crop_qty_harv_tot_kg, crop_qty_harv_tot_g,
+                           harv_month_start, harv_month_end),data= oput, 
+                  func.names = c("Mean", "St. Deviation", "Min", "Max", "Valid N"))
 
 oput$crop_code <- as.integer(oput$crop_code)
 x <- c("crop_qty_harv_fresh_kg","crop_qty_harv_fresh_g","crop_qty_harv_dry_kg",
@@ -127,6 +193,11 @@ oput <- transmute(oput, household_id, holder_id, parcel_id, field_id,
                   crop_qty_harv=crop_qty_harv_tot_kg+crop_qty_harv_tot_g,
                   crop_name)
 
+descriptive.table(vars = d(day_cut, month_cut, crop_qty_harv_fresh, crop_qty_harv_dry,
+                           crop_qty_harv),data= oput, 
+                  func.names = c("Mean", "St. Deviation", "Min", "Max", "Valid N"))
+frequencies(oput$crop_name ,r.digits=1)
+
 # -------------------------------------
 # add a dummy if a legume was grown
 # count number of crops per field
@@ -138,6 +209,8 @@ legumes <- c(11:18, 36, 118)
 oput_x <- group_by(oput, holder_id, household_id, parcel_id, field_id) %>%
   summarise(crop_count=sum(!is.na(crop_code)),
             legume = ifelse(any(crop_code %in% legumes), 1, 0))
+descriptive.table(vars = d(legume),data= oput_x, 
+                  func.names = c("Mean", "St. Deviation", "Min", "Max", "Valid N"))
 
 oput <- left_join(oput, oput_x); rm(oput_x)
 
@@ -157,7 +230,12 @@ oput2 <- read_dta(file.path(dataPath, "sect11_ph_w1.dta")) %>%
          trans_cost=ph_s11q09) 
 oput2$crop_code <- as.integer(oput2$crop_code)
 oput2$sold <- toupper(as_factor(oput2$sold))
+#VL: next command gives an error
 oput2$sold_month <- month(oput2$sold_month, label=TRUE)
+#VL Error: could not find function "month"
+
+descriptive.table(vars = d(sold, sold_qty_kg, sold_qty_gr, value, sold_month, sold_year, trans_cost),data= oput2, 
+                  func.names = c("Mean", "St. Deviation", "Min", "Max", "Valid N"))
 
 oput <- left_join(oput, oput2) %>% unique; rm(oput2)
 
@@ -203,6 +281,9 @@ crop$cropping <- as_factor(crop$cropping)
 crop$month <- toupper(as_factor(crop$month))
 crop$crop_code <- as.integer(crop$crop_code)
 
+frequencies(crop$crop_code ,r.digits=1)
+frequencies(crop$crop_name ,r.digits=1)
+
 # seed level variables
 
 seed <- read_dta(file.path(dataPath, "sect5_pp_w1.dta")) %>%
@@ -234,7 +315,9 @@ fert2$typ <- ifelse(fert2$typ %in% 1, "DAP", NA)
 # -------------------------------------
 # read in nitrogen conversion file
 
-conv <- read.csv(file.path(paste0(dataPath,"/../../.."), "Other/Fertilizer/Fert_comp.csv")) %>%
+
+conv <- read.csv(file.path(dataPath, "/../../", "Other/Fertilizer/Fert_comp.csv")) %>%
+#conv <- read.csv(file.path(paste0(dataPath,"/../../.."), "Other/Fertilizer/Fert_comp.csv")) %>%
   transmute(typ=Fert_type2, n=N_share/100, p=P_share/100) %>%
   filter(typ %in% c("UREA", "DAP"))
 
@@ -327,11 +410,18 @@ ph_lab$harv_lab[ph_lab$harv_lab %in% 0] <- NA
 # imputed and original gps measurements
 # included
 
-areas <- read_dta(paste(dataPath, "../../../Other/Plot_size/areas_eth_y1_imputed.dta", sep="/"))
+#VL: changes in read_dat command
+
+#REGZONE <- read.csv(file.path(dataPath, "/../../", "Other/Spatial/ETH/REGZONEETH.csv"))
+#areas <- read_dta(paste(dataPath, "../../../Other/Plot_size/areas_eth_y1_imputed.dta", sep="/"))
+#D:\Analyses\CIMMYT\NutritionETH\SurveyData\Other\Plot_size
+#areas <- read_dta("D:/Analyses/CIMMYT/NutritionETH/SurveyData/Other/Plot_size/areas_eth_y1_imputed.dta", sep="/")
+areas <- read_dta("D:/Analyses/CIMMYT/NutritionETH/SurveyData/Other/Plot_size/areas_eth_y1_imputed.dta")
 areas <- select(areas, holder_id, household_id=case_id, parcel_id,
                 field_id, area_gps, area_gps_mi_50,
                 area_farmer=area_sr)
-
+#REGZONE <- read.csv(file.path(dataPath, "/../../", "Other/Spatial/ETH/REGZONEETH.csv"))
+summary(areas)
 areas$area_gps <- ifelse(areas$area_gps %in% 0, NA, areas$area_gps)
 areas$area_gps_mi_50 <- ifelse(areas$area_gps_mi_50 %in% 0, NA, areas$area_gps_mi_50)
 
@@ -378,6 +468,69 @@ com <- left_join(com3, com4) %>% left_join(com6)
 rm(com3, com4, com6)
 
 #######################################
+########### Housing       #############
+#######################################
+
+#'Roof material indicates the wealth of a household through a dummy variable taking the value of
+#'1: when the roof consists of a corrugated iron sheet, concrete, asbestos, bricks
+#'0: when the roof consists of thatch, wood and mud, bamboo / reed 
+#'Contains 127 NAs after making '9' and '18' into NA's as their meaning cannot be derived 
+#'[https://books.google.nl/books?id=T8-vojNssnUC&pg=PA233&lpg=PA233&dq=corrugated+iron+sheet+wealth&source=bl&ots=Nlpu9RWJDW&sig=4L43Dwx0ChNIe0J5bEOdL3LQQ3g&hl=nl&sa=X&ved=0CFEQ6AEwB2oVChMI-v3TrIGyxwIVzJgaCh2ubghe#v=onepage&q=corrugated%20iron%20sheet%20wealth&f=false]
+#'[http://maxwellsci.com/print/crjss/v5-1-10.pdf]
+housing           <- read.dta(file.path(dataPath, "sect9_hh_w1.dta"))
+
+housing <- dplyr::select(housing, household_id, house_years = hh_s9q02_a, house_months = hh_s9q02_b, hh_s9q06)
+housing$roofmaterial[housing$hh_s9q06!=1] <- 0
+housing$roofmaterial[housing$hh_s9q06==1] <- 1
+housing$roofmaterial[housing$hh_s9q06==2] <- 1
+housing$roofmaterial[housing$hh_s9q06==7] <- 1
+housing$roofmaterial[housing$hh_s9q06==8] <- 1
+housing$roofmaterial[housing$hh_s9q06==9] <- NA
+housing$roofmaterial[housing$hh_s9q06==18] <- NA
+
+housing$house_months[is.na(housing$house_months) & housing$house_years > 0 ] <- 0
+housing$house_years[is.na(housing$house_years) & housing$house_months > 0] <- 0
+
+housing$house_age <- housing$house_years + housing$house_months/12
+housing <- dplyr::select(housing, household_id, house_age, roofmaterial)
+
+#######################################
+########### Wealth indicator #############
+#######################################
+
+#'Wealth indicator: television. Does not contain any NAs
+assets            <- read.dta(file.path(dataPath, "sect10_hh_w1.dta") )
+
+tv <- dplyr::filter(assets, hh_s10q00=="Television")
+tv <- dplyr::select(tv, household_id, television=hh_s10q01)
+tv$television[tv$television>0] <- 1
+tv <- arrange(tv, household_id)
+
+rm(assets)
+
+#######################################
+########### Livestock     #############
+#######################################
+
+#2.8 Livestock
+#-------------
+livestock         <- read.dta(file.path(dataPath, "sect8a_ls_w1.dta"))  
+by_household <- group_by(livestock, household_id)
+livestock <- as.data.frame(summarise(by_household,
+                                     Cattle = sum(ls_s8aq13a[ls_s8aq00=="CATTLE"]),                 Sheep = sum(ls_s8aq13a[ls_s8aq00=="SHEEP"]),
+                                     Goats = sum(ls_s8aq13a[ls_s8aq00=="GOATS"]),                  Horses = sum(ls_s8aq13a[ls_s8aq00=="HORSES"]),
+                                     Donkeys = sum(ls_s8aq13a[ls_s8aq00=="DONKEYS"]),               Mules = sum(ls_s8aq13a[ls_s8aq00=="MULES"]),
+                                     Camels = sum(ls_s8aq13a[ls_s8aq00=="CAMELS"]),            Layinghens = sum(ls_s8aq13a[ls_s8aq00=="LAYING HENS"]),
+                                     Nonlayinghens = sum(ls_s8aq13a[ls_s8aq00=="NON-LAYING HENS"]), Cocks = sum(ls_s8aq13a[ls_s8aq00=="COCKS"]),
+                                     Cockerels = sum(ls_s8aq13a[ls_s8aq00=="COCKERELS"]),         Pullets = sum(ls_s8aq13a[ls_s8aq00=="PULLETS"]),
+                                     Chicks = sum(ls_s8aq13a[ls_s8aq00=="CHICKS"])))          
+
+livestock$LS <- rowSums(livestock[,2:14])
+#livestock <- dplyr::select(livestock, household_id, LS)
+
+
+
+#######################################
 ########### CROSS SECTION #############
 #######################################
 
@@ -389,8 +542,11 @@ ETH2011 <- left_join(location, com); rm(com, location)
 # -------------------------------------
 # household level joins
 
-ETH2011 <- left_join(HH11, ETH2011); rm(HH11) 
+ETH2011 <- left_join(HH11, ETH2011)     ; rm(HH11) 
 ETH2011 <- left_join(ETH2011, areaTotal); rm(areaTotal)
+ETH2011 <- left_join(ETH2011, housing)  ; rm(housing)
+ETH2011 <- left_join(ETH2011, tv)       ; rm(tv)
+ETH2011 <- left_join(ETH2011, livestock); rm(livestock)
 
 # -------------------------------------
 # parcel level joins

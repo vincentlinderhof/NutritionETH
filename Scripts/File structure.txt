@@ -1,0 +1,11 @@
+File strucure
+
+ETH2011.r     produces data file ETH2011 for 2011 (individual, hh and plot level)
+ETH2011_PP.r  produces data file ETH2011 for 2011 (individual, hh and plot level) including additional assumptions
+
+
+ETH2013.r     produces data file ETH2011 for 2013 (individual, hh and plot level)
+ETH2013_PP.r  produces data file ETH2011 for 2013 (individual, hh and plot level) including additional assumptions
+
+data_combineETH.r
+

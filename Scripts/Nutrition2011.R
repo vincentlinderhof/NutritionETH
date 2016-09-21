@@ -6,6 +6,8 @@
 
 # ACT: Tom has to change his dataPath
 
+rm(CSI2011, CSI2013, CSIdata, DDS12, FNS2011, FOOD2011, FOOD2013, NUTR2011, NUTR2013)
+
 if(Sys.info()["user"] == "Tomas"){
   dataPath <- "C:/Users/Tomas/Documents/LEI/data/TZA/2010/Data"
 } else {
@@ -21,11 +23,14 @@ library(dplyr)
 library("markdown")
 library(tidyr) # Necessary for spread function in mutate command
 library(Deducer) # necessary for descriptives.tables
+library(ggplot2)
 
 options(scipen=999)
+rm(path, plot, regions_nozero) 
+
 
 # ***************************************************************************************************
-#Creation of DDS and FVS
+#Creation of FVS
 # ***************************************************************************************************
 
 #FOOD2011 <- read_dta(file.path(dataPath, "sect7_hh_w1.dta"))  # CSI saq08 hh_s7q02_a to hh_s7q02_h
@@ -49,284 +54,305 @@ FOOD2011 <- subset(FOOD2011, select=c(household_id, hh_s5bq00, hh_s5bq0a, hh_s5b
 # 50-53     1100       sugar=mean(sugar, na.rm=TRUE),
 # 53-60     1200       condiments=mean(condiments, na.rm=TRUE))
 
-aggregate(FOOD2011, by=(FOOD2011$hh_s5bq00), FUN=count, na.rm=TRUE)
+#aggregate(FOOD2011, by=(FOOD2011$hh_s5bq00), FUN=count, na.rm=TRUE)
 
 
-# Construct dummy variables for food items
-NUTR2011 <-
-  mutate(FOOD2011, count = ifelse(hh_s5bq01 == 1, hh_s5bq02, ifelse(NA))) %>%
-  group_by(household_id) %>%
-  spread(hh_s5bq00, count) %>%
-  filter (! duplicated(household_id)) %>%
-  replace(is.na(.), 0)
-NUTR2011CH <- NUTR2011[ c(1,2,3,4) ]
-NUTR2011 <- NUTR2011[ -c(2,3,4) ]
-summary(NUTR2011CH)
+# Construct dummy variables for food items: do not use as it produces wrong results
+#NUTR2011 <-
+#  mutate(FOOD2011, count = ifelse(hh_s5bq01 == 1, hh_s5bq02, ifelse(NA))) %>%
+#  group_by(household_id) %>%
+#  spread(hh_s5bq00, count) %>%
+#  filter (! duplicated(household_id)) %>%
+#  replace(is.na(.), 0)
+#NUTR2011CH <- NUTR2011[ c(1,2,3,4) ]
+#NUTR2011 <- NUTR2011[ -c(2,3,4) ]
+#summary(NUTR2011CH)
 
-FOOD2011$FI01 <- 1*(FOOD2011$hh_s5bq00==1 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI02 <- 1*(FOOD2011$hh_s5bq00==2 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI03 <- 1*(FOOD2011$hh_s5bq00==3 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI04 <- 1*(FOOD2011$hh_s5bq00==4 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI01_Enjera       <- 1*(FOOD2011$hh_s5bq00==1 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI02_OtherCereals <- 1*(FOOD2011$hh_s5bq00==2 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI03_Potatoes     <- 1*(FOOD2011$hh_s5bq00==3 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI04_Pasta        <- 1*(FOOD2011$hh_s5bq00==4 & FOOD2011$hh_s5bq01==1)
+ 
+FOOD2011$FI05_Sugar         <- 1*(FOOD2011$hh_s5bq00==5 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI06_PulsesandNuts <- 1*(FOOD2011$hh_s5bq00==6 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI07_Vegetables    <- 1*(FOOD2011$hh_s5bq00==7 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI08_Fruits        <- 1*(FOOD2011$hh_s5bq00==8 & FOOD2011$hh_s5bq01==1)
 
-FOOD2011$FI05 <- 1*(FOOD2011$hh_s5bq00==5 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI06 <- 1*(FOOD2011$hh_s5bq00==6 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI07 <- 1*(FOOD2011$hh_s5bq00==7 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI08 <- 1*(FOOD2011$hh_s5bq00==8 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI09_RedMeat <- 1*(FOOD2011$hh_s5bq00==9 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI10_Poultry <- 1*(FOOD2011$hh_s5bq00==10 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI11_Eggs    <- 1*(FOOD2011$hh_s5bq00==11 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI12_Fish    <- 1*(FOOD2011$hh_s5bq00==12 & FOOD2011$hh_s5bq01==1)
 
-FOOD2011$FI09 <- 1*(FOOD2011$hh_s5bq00==9 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI10 <- 1*(FOOD2011$hh_s5bq00==10 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI11 <- 1*(FOOD2011$hh_s5bq00==11 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI12 <- 1*(FOOD2011$hh_s5bq00==12 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI13_FatsandOils   <- 1*(FOOD2011$hh_s5bq00==13 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI14_DairyProducts <- 1*(FOOD2011$hh_s5bq00==14 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI15_Condiments    <- 1*(FOOD2011$hh_s5bq00==15 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI16_KochoandBula  <- 1*(FOOD2011$hh_s5bq00==16 & FOOD2011$hh_s5bq01==1)
 
-FOOD2011$FI13 <- 1*(FOOD2011$hh_s5bq00==13 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI14 <- 1*(FOOD2011$hh_s5bq00==14 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI15 <- 1*(FOOD2011$hh_s5bq00==15 & FOOD2011$hh_s5bq01==1)
-FOOD2011$FI16 <- 1*(FOOD2011$hh_s5bq00==16 & FOOD2011$hh_s5bq01==1)
+NUTR2011a <- aggregate(FI01_Enjera       ~ household_id, FOOD2011, sum)
+NUTR2011 <- NUTR2011a; rm(NUTR2011a)
+NUTR2011a <- aggregate(FI02_OtherCereals ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI03_Potatoes     ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI04_Pasta        ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
 
-NUTR2011a <- aggregate(FI01 ~ household_id, FOOD2011, sum)
-NUTR2011b <- aggregate(FI02 ~ household_id, FOOD2011, sum)
-NUTR2011c <- aggregate(FI03 ~ household_id, FOOD2011, sum)
-NUTR2011d <- aggregate(FI04 ~ household_id, FOOD2011, sum)
+NUTR2011a <- aggregate(FI05_Sugar         ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI06_PulsesandNuts ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI07_Vegetables    ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI08_Fruits        ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
 
-NUTR2011ALL <- NUTR2011a
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011b)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011c)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011d)
+NUTR2011a <- aggregate(FI09_RedMeat ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI10_Poultry ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI11_Eggs    ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI12_Fish    ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
 
-NUTR2011a <- aggregate(FI05 ~ household_id, FOOD2011, sum)
-NUTR2011b <- aggregate(FI06 ~ household_id, FOOD2011, sum)
-NUTR2011c <- aggregate(FI07 ~ household_id, FOOD2011, sum)
-NUTR2011d <- aggregate(FI08 ~ household_id, FOOD2011, sum)
+NUTR2011a <- aggregate(FI13_FatsandOils   ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI14_DairyProducts ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI15_Condiments    ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
+NUTR2011a <- aggregate(FI16_KochoandBula  ~ household_id, FOOD2011, sum)
+NUTR2011 <- left_join(NUTR2011, NUTR2011a); rm(NUTR2011a)
 
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011a)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011b)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011c)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011d)
+NUTR2011$FVS16 <- rowSums(NUTR2011[2:17])
 
-NUTR2011a <- aggregate(FI09 ~ household_id, FOOD2011, sum)
-NUTR2011b <- aggregate(FI10 ~ household_id, FOOD2011, sum)
-NUTR2011c <- aggregate(FI11 ~ household_id, FOOD2011, sum)
-NUTR2011d <- aggregate(FI12 ~ household_id, FOOD2011, sum)
+# descriptives of food group dummy variables and FVS and DDS
+ds_fvs <- descriptive.table(vars = d(FI01_Enjera, FI02_OtherCereals, FI03_Potatoes, FI04_Pasta, FI05_Sugar, FI06_PulsesandNuts,
+                           FI07_Vegetables, FI08_Fruits, FI09_RedMeat, FI10_Poultry, FI11_Eggs, FI12_Fish, 
+                           FI13_FatsandOils, FI14_DairyProducts, FI15_Condiments, FI16_KochoandBula, FVS16),data= NUTR2011, 
+                  func.names = c("Mean","St. Deviation", "Min", "Max", "Valid N"))
 
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011a)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011b)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011c)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011d)
+FNS2011 <- NUTR2011[ c("household_id", "FVS16") ]
 
-NUTR2011a <- aggregate(FI13 ~ household_id, FOOD2011, sum)
-NUTR2011b <- aggregate(FI14 ~ household_id, FOOD2011, sum)
-NUTR2011c <- aggregate(FI15 ~ household_id, FOOD2011, sum)
-NUTR2011d <- aggregate(FI16 ~ household_id, FOOD2011, sum)
-
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011a)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011b)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011c)
-NUTR2011ALL <- left_join(NUTR2011ALL, NUTR2011d)
-
-
-NUTR2011 <- aggregate(FOOD2011, by=(FOOD2011$hh_id), FUN=sum, na.rm=TRUE)
-
-#aggregate(data$age, by=list(data$group), FUN=mean)[2]
-
-NUTR2011$household_id_new <- as.numeric(NUTR2011$household_id)
-NUTR2011 <- NUTR2011[ -c(2) ]
-NUTR2011 <- NUTR2011[ -c(1) ]
-
-NUTR2011 <- group_by(NUTR2011, household_id_new)
-NUTR2011 <- group_by(FOOD2011, household_id)
-# Remove skq1 and skcode variables which are useless at household level
-#NUTR2008 <-NUTR2008[-c(2,3)]
+# ***************************************************************************************************
+#Construction of DDS, uses the data of the FVC construction!
+# ***************************************************************************************************
 
 # Columns correspond to list of food items!
 # sum fooditems into 12 foodgroups for FVS: columns correspond to list of food items!
-NUTR2010$cereals             <- 1*(rowSums(NUTR2010[2:13]) > 0)
-NUTR2010$rootsandtubers      <- 1*(rowSums(NUTR2010[14:20]) > 0)
-NUTR2010$vegetables          <- 1*(rowSums(NUTR2010[29:31]) > 0)
-NUTR2010$pulsesandnuts       <- 1*(rowSums(NUTR2010[24:28]) > 0)
-NUTR2010$fruits              <- 1*(rowSums(NUTR2010[32:34]) > 0)
-NUTR2010$meat                <- 1*(rowSums(NUTR2010[36:41]) > 0)
-NUTR2010$eggs                <- 1*(rowSums(NUTR2010[42]) > 0)
-NUTR2010$fishandseafood      <- 1*(rowSums(NUTR2010[43:45]) > 0)
-NUTR2010$milkandmilkproducts <- 1*(rowSums(NUTR2010[46:48]) > 0)
-NUTR2010$oilsandfats         <- 1*(rowSums(NUTR2010[49:50]) > 0)
-NUTR2010$sugar               <- 1*(rowSums(NUTR2010[21:23])+rowSums(NUTR2010[35]) > 0)
-NUTR2010$condiments          <- 1*(rowSums(NUTR2010[51:60]) > 0)
+NUTR2011$cereals         <- 1*((NUTR2011[ c("FI01_Enjera", "FI02_OtherCereals", "FI04_Pasta") ] )  > 0 ) 
+NUTR2011$rootsandtubers  <- 1*((NUTR2011[ c("FI03_Potatoes", "FI16_KochoandBula") ] )  > 0 ) 
+NUTR2011$vegetables      <- 1*((NUTR2011[ c("FI07_Vegetables") ] )  > 0 )
+NUTR2011$fruits          <- 1*((NUTR2011[ c("FI08_Fruits") ] )  > 0 )
+NUTR2011$meat            <- 1*((NUTR2011[ c("FI09_RedMeat", "FI10_Poultry")] )  > 0 ) 
+NUTR2011$eggs            <- 1*((NUTR2011[ c("FI11_Eggs") ] )  > 0 )
+NUTR2011$fish            <- 1*((NUTR2011[ c("FI12_Fish") ] )  > 0 )
+NUTR2011$pulsesandnuts   <- 1*((NUTR2011[ c("FI06_PulsesandNuts") ] )  > 0 )
+NUTR2011$dairyproducts   <- 1*((NUTR2011[ c("FI14_DairyProducts") ] )  > 0 )
+NUTR2011$oilsandfats     <- 1*((NUTR2011[ c("FI13_FatsandOils") ] )  > 0 )
+NUTR2011$condiments      <- 1*((NUTR2011[ c("FI15_Condiments") ] )  > 0 )
+NUTR2011$sugar           <- 1*((NUTR2011[ c("FI05_Sugar") ] )  > 0 )
 
-#Alcoholic beverages included in FOOD group 12, see FAO (2013)!
-# Colums        group item 
-# 2-13          100   cereals 
-# 14-20         200   rootsandtubers
-# 19-21         300   vegetables
-# 24-28         400   pulsesandnuts
-# 32-34         500   fruits
-# 36-41         600   meat
-# 42            700   eggs
-# 43-45         800   fishandseafood
-# 46-48         900   milkandmilkproducts
-# 49-50         1000  oilsandfats
-# 21-23, 35     1100  sugar
-# 51-60         1200  condiments
+#install.packages(Hmisc)
+#library(Hmisc)
+#label(NUTR2011ALL$cereals) <- "FG Cereals" 
 
-# Construction of DDS 
-NUTR2010 <- mutate(NUTR2010, 
-                   DDS =  cereals + 
-                     rootsandtubers +
-                     vegetables +
-                     pulsesandnuts +
-                     fruits +
-                     meat +
-                     eggs +
-                     fishandseafood +
-                     milkandmilkproducts +
-                     oilsandfats +
-                     sugar +
-                     condiments )
+NUTR2011$DDS12 <- rowSums(NUTR2011[ c("cereals", "rootsandtubers", "vegetables",
+                                          "fruits", "meat", "eggs", "fish",
+                                          "pulsesandnuts", "dairyproducts", "oilsandfats",
+                                          "sugar","condiments")] )
+DDS2011 <- NUTR2011[ c("household_id", "DDS12") ]
 
-# Constructuion of FVS
-NUTR2010$FVS <- rowSums(NUTR2010[2:60])
+FNS2011 <-left_join(FNS2011, DDS2011)
+rm(DDS2011)
 
-# Construction of household database with FVS and DDS variable
-by_hhid <- group_by(NUTR2010, y2_hhid)
-
-# Remove the coolums with food items variables
-by_hhid <- by_hhid[ -c(2:59) ]
-
-#DDS2008total <-
-#  summarise (by_hhid,
-#             cereals = mean(cereals, na.rm = TRUE),
-#             rootsandtubers = mean(rootsandtubers, na.rm = TRUE),
-#             vegetables = mean(vegetables, na.rm=TRUE),
-#             pulsesandnuts = mean(pulsesandnuts, na.rm=TRUE),
-#             fruits = mean(fruits, na.rm=TRUE),
-#             meat = mean(meat, na.rm=TRUE),
-#             eggs = mean(eggs, na.rm=TRUE),
-#             fishandseafood= mean(fishandseafood, na.rm=TRUE),
-#             milkandmilkproducts= mean(milkandmilkproducts, na.rm=TRUE),
-#             oilsandfats=mean(oilsandfats, na.rm=TRUE),
-#             sugar=mean(sugar, na.rm=TRUE),
-#             condiments=mean(condiments, na.rm=TRUE))
-
-saveRDS(by_hhid, file="Data/Nutrition indicators TZA 2010.Rda")
+#NUTR2011$DDS1200               <- rowSums(NUTR2011[19:30] )
+#summary(NUTR2011$DDS1200)
 
 # descriptives of food group dummy variables and FVS and DDS
-descriptive.table(vars = d(cereals, rootsandtubers, vegetables, pulsesandnuts, fruits, meat, eggs, fishandseafood,
-                           milkandmilkproducts, oilsandfats, sugar,condiments, DDS, FVS),data= by_hhid, 
-                  func.names = c("Mean","St. Deviation", "Min", "Max", "Skew","Valid N"))
-
-# Histograms of nutrition indicators: DDS
-hist(by_hhid$DDS, freq = FALSE, ylim = c(0, 0.2), xlab="DDS", ylab="%", main="Freguency of DDS in 2010")
-
-# Histograms of nutrition indicators: FVS
-hist(by_hhid$FVS, freq = FALSE, ylim = c(0, 0.1), xlab="FVS", ylab="%", main="Freguency of FVS in 2010")
-
-# calculation of correlation coefficent of DDS and FVS
-myvars <- c("DDS", "FVS")
-by_hhidsub <- by_hhid[myvars]
-cor(by_hhidsub, use="all.obs", method="pearson")
-rm(by_hhidsub, myvars)
-
-# Simple Scatterplot of DDS and FVS
-plot(by_hhid$DDS, by_hhid$FVS, main="Coherence between DDS and FVS in 2010", 
-     xlab="DDS ", ylab="FVS ", pch=19) 
-
-FNS2010 <- subset(by_hhid, select=c(y2_hhid,DDS,FVS))
+ds_dds <- descriptive.table(vars = d(cereals, rootsandtubers, vegetables, fruits, meat, eggs, fish,
+                           pulsesandnuts, dairyproducts, oilsandfats, sugar, condiments, DDS12, FVS16),data= NUTR2011, 
+                  func.names = c("Mean","St. Deviation", "Min", "Max", "Valid N"))
 
 
 # ***************************************************************************************************
 #Construction of FCS
 # ***************************************************************************************************
+FOOD2011$hh_s5bq02t <- ifelse(is.na(FOOD2011$hh_s5bq02),0,FOOD2011$hh_s5bq02)
+  
+FOOD2011$FI01_Enjera       <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==1 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI02_OtherCereals <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==2 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI03_Potatoes     <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==3 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI04_Pasta        <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==4 & FOOD2011$hh_s5bq01==1)
 
-HH_SEC_K2_2010 <- read_dta(file.path(dataPath, "/TZNPS2HH2DTA/HH_SEC_K2.dta"))
+FOOD2011$FI05_Sugar         <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==5 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI06_PulsesandNuts <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==6 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI07_Vegetables    <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==7 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI08_Fruits        <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==8 & FOOD2011$hh_s5bq01==1)
 
-FCS2010 <- group_by(HH_SEC_K2_2010, y2_hhid) %>% 
-  na.omit() %>%
-  #  select(y2_hhid, itemcode, hh_k08_3) %>%
-  spread(itemcode, hh_k08_3) %>% 
-  #  mutate(AB = A+B) %>%
-  #  select(-A, -B) %>%
-  #  mutate(AB=replace(AB, AB>=7, 7)) %>%
-  rename(main_staples=A, less_staples=B, pulses_nuts=C, vegetables=D, meat_fish=E, fruits=F, milk=G, oil=H, sugar=I, condiments=J)
+FOOD2011$FI09_RedMeat <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==9 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI10_Poultry <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==10 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI11_Eggs    <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==11 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI12_Fish    <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==12 & FOOD2011$hh_s5bq01==1)
 
-FCS2010$FCSw <- 
-  FCS2010$main_staples*2 + 
-  FCS2010$less_staples*2 + 
-  FCS2010$pulses_nuts*3 + 
-  FCS2010$vegetables*1 + 
-  FCS2010$fruits*1 + 
-  FCS2010$milk*4 + 
-  FCS2010$meat_fish*4 + 
-  FCS2010$sugar*0.5 + 
-  FCS2010$condiments*0
+FOOD2011$FI13_FatsandOils   <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==13 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI14_DairyProducts <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==14 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI15_Condiments    <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==15 & FOOD2011$hh_s5bq01==1)
+FOOD2011$FI16_KochoandBula  <- FOOD2011$hh_s5bq02t*(FOOD2011$hh_s5bq00==16 & FOOD2011$hh_s5bq01==1)
 
-FCS2010$FCSu <- 
-  FCS2010$main_staples + 
-  FCS2010$less_staples + 
-  FCS2010$pulses_nuts + 
-  FCS2010$vegetables + 
-  FCS2010$fruits + 
-  FCS2010$milk + 
-  FCS2010$meat_fish + 
-  FCS2010$sugar + 
-  FCS2010$condiments
+NUTR2011 <- aggregate(FOOD2011, by=list(FOOD2011$household_id), FUN=max )
 
-#  RM(Food2010,NUTR2010)
 
-# descriptives of food groups (FCS) and FCS weighted and unweighted
-descriptive.table(vars = d(cereals, rootsandtubers, vegetables, pulsesandnuts, fruits, meatandfish,
-                           milkproducts, fatsandoils, sugar,condiments, FCSw, FCSu),data= FCS2010, 
+NUTR2011$FCS16w <- 
+  NUTR2011$FI01_Enjera*2 + 
+  NUTR2011$FI02_OtherCereals*2 + 
+  NUTR2011$FI03_Potatoes*2 + 
+  NUTR2011$FI04_Pasta*2 + 
+  NUTR2011$FI05_Sugar*0.5 + 
+  NUTR2011$FI06_PulsesandNuts*3 + 
+  NUTR2011$FI07_Vegetables*1 + 
+  NUTR2011$FI08_Fruits*1 + 
+  NUTR2011$FI09_RedMeat*4 +
+  NUTR2011$FI10_Poultry*4 +
+  NUTR2011$FI11_Eggs*4 +
+  NUTR2011$FI12_Fish*4 +
+  NUTR2011$FI13_FatsandOils*0.5 +
+  NUTR2011$FI14_DairyProducts*4 +
+  NUTR2011$FI15_Condiments*0 +
+  NUTR2011$FI16_KochoandBula*2
+
+NUTR2011$FCS16u <- 
+  NUTR2011$FI01_Enjera + 
+  NUTR2011$FI02_OtherCereals + 
+  NUTR2011$FI03_Potatoes + 
+  NUTR2011$FI04_Pasta + 
+  NUTR2011$FI05_Sugar + 
+  NUTR2011$FI06_PulsesandNuts + 
+  NUTR2011$FI07_Vegetables + 
+  NUTR2011$FI08_Fruits + 
+  NUTR2011$FI09_RedMeat +
+  NUTR2011$FI10_Poultry +
+  NUTR2011$FI11_Eggs +
+  NUTR2011$FI12_Fish +
+  NUTR2011$FI13_FatsandOils +
+  NUTR2011$FI14_DairyProducts +
+  NUTR2011$FI15_Condiments +
+  NUTR2011$FI16_KochoandBula 
+
+FCS2011 <- NUTR2011[ c("household_id", "FCS16w", "FCS16u")]
+FNS2011 <- left_join(FNS2011, FCS2011)
+rm(FCS2011)
+#rm(NUTR2010, NUTR2011ALL, NUTR2011b, NUTR2011c, NUTR2011CH, NUTR2011d)
+
+# descriptives of food group dummy variables and FVS and DDS
+library("Deducer")
+ds_fcs <- descriptive.table(vars = d(FI01_Enjera ,  FI02_OtherCereals ,  FI03_Potatoes , 
+                           FI04_Pasta ,  FI05_Sugar ,  FI06_PulsesandNuts , 
+                           FI07_Vegetables ,  FI08_Fruits ,  FI09_RedMeat ,
+                           FI10_Poultry ,  FI11_Eggs , FI12_Fish ,
+                           FI13_FatsandOils ,  FI14_DairyProducts ,  FI15_Condiments ,  FI16_KochoandBula,
+                           FCS16w, FCS16u),data= NUTR2011, 
                   func.names = c("Mean","St. Deviation", "Min", "Max", "Skew","Valid N"))
-
-# Histograms of nutrition indicators: weighted FCS
-hist(FCS2010$FCSw, freq = FALSE, ylim = c(0, 0.02), xlab="FCSw", ylab="%", main="Frequency of FCS (weighted) in 2010")
-
-# Histograms of nutrition indicators: unweighted FCS
-hist(FCS2010$FCSu, freq = FALSE, ylim = c(0, 0.05), xlab="FCSw", ylab="%", main="Frequency of FCS (unweighted) in 2010")
-
-# calculation of correlation coefficent of DDS and FVS
-myvars <- c("FCSw", "FCSu")
-FCS2010sub <- FCS2010[myvars]
-cor(FCS2010sub, use="all.obs", method="pearson")
-rm(FCS2010sub, myvars)
-
-FNS2010 <- left_join(TZA2010, FCSu)
-FNS2010 <- left_join(TZA2010, FCSw)
 
 
 # ***************************************************************************************************
 #Construction of CSI
 # ***************************************************************************************************
-HH_SEC_I1_2010 <- read_dta(file.path(dataPath, "TZNPS2HH1DTA/HH_SEC_I1.dta"))
-*FOOD2010 <- read_dta(file.path(dataPath, "/TZNPS2HH3DTA/HH_SEC_K1.dta"))
+CSI2011 <- read_dta(file.path(dataPath, "sect7_hh_w1.dta"))  # CSI hh_s7q01 hh_s7q02_a hh_s7q02_b hh_s7q02_c hh_s7q02_d hh_s7q02_e hh_s7q02_f hh_s7q02_g hh_s7q02_h
+CSI2011 <-CSI2011[ c("household_id", "hh_s7q01", "hh_s7q02_a", "hh_s7q02_b", "hh_s7q02_c", "hh_s7q02_d", 
+                     "hh_s7q02_e", "hh_s7q02_f", "hh_s7q02_g", "hh_s7q02_h" )]
 
 #D:\Analyses\CIMMYT\NutritionTZA\SurveyData\2010\Data\TZNPS2HH1DTA
 #D:\Analyses\CIMMYT\NutritionTZA\SurveyData\2010\Data\TZNPS2HH1DTA
 
-descriptive.table(vars = d(hh_i02_1, hh_i02_2, hh_i02_3, hh_i02_4, hh_i02_5, hh_i02_6, 
-                           hh_i02_7, hh_i02_8),data= HH_SEC_I1_2010, 
+descriptive.table(vars = d(hh_s7q02_a, hh_s7q02_b, hh_s7q02_c, hh_s7q02_d, hh_s7q02_e, hh_s7q02_f, 
+                           hh_s7q02_g, hh_s7q02_h),data= CSI2011, 
                   func.names = c("Mean","St. Deviation", "Min", "Max", "Skew","Valid N"))
 
-CSI2010 <- 
-  subset(HH_SEC_I1_2010, select=c(y2_hhid, hh_i01, hh_i02_1, hh_i02_2, hh_i02_3, hh_i02_4, hh_i02_5, hh_i02_6, 
-                                  hh_i02_7, hh_i02_8)) %>% na.omit()
 
-CSI2010$CSI <- 
-  CSI2010$hh_i02_1*1 + 
-  CSI2010$hh_i02_2*1 + 
-  CSI2010$hh_i02_3*1 + 
-  CSI2010$hh_i02_4*1 + 
-  CSI2010$hh_i02_5*3 + 
-  CSI2010$hh_i02_6*2 + 
-  CSI2010$hh_i02_7*0 + 
-  CSI2010$hh_i02_8*4
+CSI2011$CSI <- 
+  CSI2011$hh_s7q02_a*1 + 
+  CSI2011$hh_s7q02_b*1 + 
+  CSI2011$hh_s7q02_c*1 + 
+  CSI2011$hh_s7q02_d*1 + 
+  CSI2011$hh_s7q02_e*3 + 
+  CSI2011$hh_s7q02_f*2 + 
+  CSI2011$hh_s7q02_g*0 + 
+  CSI2011$hh_s7q02_h*4
 
-CSI2010<- select(CSI2010, y2_hhid, CSI)
-CSI2010<- mutate(CSI2010, surveyyear=2010) %>% rename(hhid2010=y2_hhid)
+CSI2011$rCSI <- 
+  CSI2011$hh_s7q02_a*1 + 
+  CSI2011$hh_s7q02_c*1 + 
+  CSI2011$hh_s7q02_d*1 + 
+  CSI2011$hh_s7q02_e*3 + 
+  CSI2011$hh_s7q02_f*2  
 
-descriptive.table(vars = d(hh_i02_1, hh_i02_2, hh_i02_3, hh_i02_4, hh_i02_5, hh_i02_6, 
-                           hh_i02_7, hh_i02_8, CSI),data= CSI2010, 
+
+ds_csi <- descriptive.table(vars = d(hh_s7q02_a, hh_s7q02_b, hh_s7q02_c, hh_s7q02_d, hh_s7q02_e, hh_s7q02_f, 
+                           hh_s7q02_g, hh_s7q02_h, CSI, rCSI),data= CSI2011, 
                   func.names = c("Mean","St. Deviation", "Min", "Max", "Skew","Valid N"))
 
-saveRDS(CSI2010, "Data/CSI2010.rds")
+CSI2011 <- CSI2011[ c("household_id", "CSI", "rCSI")]
+
+FNS2011 <- left_join(FNS2011, CSI2011)
+
+saveRDS(FNS2011, "Data/FNS2011.rds")
+
+
+# ***************************************************************************************************
+# Descriptive statistics of FNS indicators in 2011
+# ***************************************************************************************************
+# Histograms of nutrition indicators: DDS
+#
+qplot(DDS12, data=FNS2011, geom="histogram", bins=13, xlab="DDS", ylab="unit", main="Frequency in 2011") 
+plot=qplot(DDS12, data=FNS2011, geom="histogram", bins=13, xlab="DDS", ylab="%", main="Frequency in 2011") 
+ggsave(plot,file="Results/histrogram_DDS12.pdf")
+
+# Histograms of nutrition indicators: FVS
+qplot(FVS16, data=FNS2011, geom="histogram", bins=16, xlab="FVS", ylab="unit", main="Frequency in 2011") 
+plot=qplot(FVS16, data=FNS2011, geom="histogram", bins=16, xlab="FVS", ylab="unit", main="Frequency in 2011") 
+ggsave(plot,file="Results/histrogram_FVS16.pdf")
+#hist(FNS2011$FVS16, freq = FALSE, ylim = c(0, 0.2), xlab="FVS", ylab="%", main="Frequency in 2011")
+
+# Histograms of nutrition indicators: FCS weighted
+#plot=hist(FNS2011$FCS16w, freq = FALSE, ylim = bins=70, xlab="FCS weighted", ylab="%", main="Frequency in 2011")
+plot=qplot(FCS16w, data=FNS2011, geom="histogram", bins=70, xlab="FCS (weighted)", ylab="unit", main="Frequency in 2011") 
+ggsave(plot,file="Results/histrogram_FCSw16.pdf")
+
+# Histograms of nutrition indicators: FCS unweighted
+#hist(FNS2011$FCS16u, freq = FALSE, ylim = c(0, 0.2), xlab="FCS unweighted", ylab="%", main="Frequency in 2011")
+plot=qplot(FCS16u, data=FNS2011, geom="histogram", bins=70, xlab="FCS (unweighted)", ylab="unit", main="Frequency in 2011") 
+ggsave(plot,file="Results/histrogram_FCSu16.pdf")
+
+# Histograms of nutrition indicators: CSI
+hist(FNS2011$CSI, freq = FALSE, ylim = c(0, 0.2), xlab="CSI", ylab="%", main="Frequency in 2011")
+
+# Histograms of nutrition indicators: rCSI
+hist(FNS2011$rCSI, freq = FALSE, ylim = c(0, 0.2), xlab="rCSI", ylab="%", main="Frequency in 2011")
+
+
+# calculation of correlation coefficent of DDS and FVS
+myvars <- c("DDS12", "FVS16","FCS16w","FCS16u","CSI","rCSI")
+FNS2011sub <- FNS2011[myvars]
+FNS2011matrix <- cor(FNS2011sub, use="complete.obs", method="pearson")
+rm(FNS2011sub, myvars)
+
+# Simple Scatterplot of DDS and FVS
+plot(FNS2011$DDS12, FNS2011$FVS16, main="Coherence between DDS and FVS in 2011", 
+     xlab="DDS ", ylab="FVS ", pch=19) 
+
+# Simple Scatterplot of DDS and FVS
+plot(FNS2011$FCS16w, FNS2011$FCS16u, main="Coherence between FCS (weighted) and FCS (unweighted) in 2011", 
+     xlab="FCS16w ", ylab="FCS16u ", pch=19) 
+
+# Simple Scatterplot of DDS and FVS
+plot(FNS2011$CSI, FNS2011$rCSI, main="Coherence between CSI and reduced CSI in 2011", 
+     xlab="CSI ", ylab="rCSI ", pch=19) 
+
+write.csv(ds_dds, "results/descriptives_dds.csv")
+write.csv(ds_fcs, "results/descriptives_dds.csv")
+write.csv(ds_csi, "results/descriptives_dds.csv")
+write.csv(ds_fvs, "results/descriptives_dds.csv")
 
 ## Add it to the database
 # Household level
@@ -339,5 +365,4 @@ TZA2008 <- left_join(TZA2008, FVS); rm(FVS)
 TZA2008 <- left_join(TZA2008, FCSw); rm(FCSw)
 TZA2008 <- left_join(TZA2008, FCSu); rm(FCSu)
 TZA2008 <- left_join(TZA2008, CSI); rm(CSI)
-
 

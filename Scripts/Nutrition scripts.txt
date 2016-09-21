@@ -6,17 +6,24 @@ Consumption
 Section 5A
 Question 1-6
 
+* FVS 
 
-25 food items (one week)
+25 food items (one week) 
 Cereals (6)
 Pulses (5)
 Oils seeds (2)
 Vegetables and fruits (2)
 Tubers and Stems (2)
-Others (6)
+Milkproducts (milk and cheese)
+Meat products (and eggs)
+Sugar
+0thers (Salt)
 Stimulants (2)
 
-section 5b (16 aggregates) incl. frequency in one week
+*DDS and FCS
+
+section 5b questions 1 (yes/no) and 2 (number of days/frequency in  week)
+(16 aggregates) incl. frequency in one week
 1 Enjera (teff)
 2 Other cereal (rice, sorghum, millet, wheat bread, etc)
 3 Potatoes
@@ -35,3 +42,9 @@ section 5b (16 aggregates) incl. frequency in one week
 16 Kocho/Bula
 
 How to relate it to food groups and items?
+
+
+
+
+CSI 
+Section 7 question 2A to 2H

@@ -5,7 +5,8 @@
 if(Sys.info()["user"] == "Tomas"){
   dataPath <- "C:/Users/Tomas/Documents/LEI/data/ETH/2013/Data"
 } else {
-  dataPath <- "N:/Internationaal Beleid  (IB)/Projecten/2285000066 Africa Maize Yield Gap/SurveyData/ETH/2013/Data"
+  dataPath <- "D:/Analyses/CIMMYT/NutritionETH/SurveyData/2013/Data"
+#  dataPath <- "N:/Internationaal Beleid  (IB)/Projecten/2285000066 Africa Maize Yield Gap/SurveyData/ETH/2013/Data"
 }
 
 library(haven)
@@ -30,7 +31,9 @@ location$REGCODE <- as.integer(location$REGCODE)
 
 # match up with the names from the survey (prepared in a seperate file)
 
-REGZONE <- read.csv(file.path(paste0(dataPath,"/../../.."), "Other/Spatial/ETH/REGZONEETH.csv"))
+#VL: change of directory
+#REGZONE <- read.csv(file.path(paste0(dataPath,"/../../.."), "Other/Spatial/ETH/REGZONEETH.csv"))
+REGZONE <- read.csv(file.path(dataPath, "/../../", "Other/Spatial/ETH/REGZONEETH.csv"))
 
 # join with household identifications
 location <- left_join(location, REGZONE)
@@ -222,7 +225,8 @@ fert2$purch <- ifelse(fert2$purch %in% 1, 1, 0)
 # -------------------------------------
 # read in nitrogen conversion file
 
-conv <- read.csv(file.path(paste0(dataPath,"/../../.."), "Other/Fertilizer/Fert_comp.csv")) %>%
+conv <- read.csv(file.path(dataPath, "/../../", "Other/Fertilizer/Fert_comp.csv")) %>%
+#conv <- read.csv(file.path(paste0(dataPath,"/../../.."), "Other/Fertilizer/Fert_comp.csv")) %>%
   transmute(typ=Fert_type2, n=N_share/100, p=P_share/100) %>%
   filter(typ %in% c("UREA", "DAP"))
 
@@ -336,7 +340,9 @@ ph_lab <- transmute(ph_lab, holder_id, household_id2, parcel_id, field_id,
 ############### GEO ###################
 #######################################
 
-geo <- readRDS(file.path(dataPath, "../../../Other/Spatial/ETH/ETH_geo_2013.rds")) 
+#VL: change of directory 
+#geo <- readRDS(file.path(dataPath, "../../../Other/Spatial/ETH/ETH_geo_2013.rds")) 
+geo <- readRDS(file.path(dataPath, "/../../Other/Spatial/ETH/ETH_geo_2013.rds")) 
 
 
 #######################################
@@ -347,7 +353,9 @@ geo <- readRDS(file.path(dataPath, "../../../Other/Spatial/ETH/ETH_geo_2013.rds"
 # imputed and original gps measurements
 # included
 
-areas <- read_dta(file.path(dataPath, "../../../Other/Plot_size/areas_ETH2013.dta"))
+#VL: change of directory
+#areas <- read_dta(file.path(dataPath, "../../../Other/Plot_size/areas_ETH2013.dta"))
+areas <- read_dta("D:/Analyses/CIMMYT/NutritionETH/SurveyData/Other/Plot_size/areas_ETH2013.dta")
 areas <- select(areas, holder_id, household_id2,
                 parcel_id, field_id, area_gps, area_gps_mi50,
                 area_farmer=area_sr)

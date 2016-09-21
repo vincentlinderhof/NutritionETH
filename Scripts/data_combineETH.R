@@ -7,16 +7,21 @@
 if(Sys.info()["user"] == "Tomas"){
   path <- "C:/Users/Tomas/Documents/LEI/pro-gap/ETH"
 } else {
-  path <- "N:/Internationaal Beleid  (IB)/Projecten/2285000066 Africa Maize Yield Gap/SurveyData/Code/ETH/"
+  path <- "D:/Analyses/CIMMYT/NutritionETH/Scripts"
 }
+#D:\Analyses\CIMMYT\NutritionETH\Scripts
+
+setwd("D:/Analyses/CIMMYT/NutritionETH")
 
 library(dplyr)
 
 options(scipen=999)
 
-# get all three waves, the output of the UGA_****.R script files
-suppressMessages(source(file.path(path, "ETH_2011PP.R")))
-suppressMessages(source(file.path(path, "ETH_2013PP.R")))
+# get both waves, the output of the ETH_****.R script files
+suppressMessages(source("D:/Analyses/CIMMYT/NutritionETH/Scripts/ETH_2011PP.R"))
+suppressMessages(source("D:/Analyses/CIMMYT/NutritionETH/Scripts/ETH_2013PP.R")))
+#suppressMessages(source(file.path(path, "ETH_2011PP.R")))
+#suppressMessages(source(file.path(path, "ETH_2013PP.R")))
 
 # -------------------------------------
 # example: select only maize farmers:
