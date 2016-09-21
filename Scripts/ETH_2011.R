@@ -94,21 +94,22 @@ frequencies(HH11$cage ,r.digits=1)
 # of education of all household members
 # between the ages of 15 and 55
 
-#education <- read_dta(file.path(dataPath, "sect2_hh_w1.dta")) %>%
-#  select(household_id, individual_id, ea_id,
-#         literate=hh_s2q02, ed_any=hh_s2q03)
-education <- read_dta(file.path(dataPath, "sect2_hh_w1.dta")) 
-education <- education[ c("household_id", "individual_id", "ea_id", "hh_s2q02", "hh_s2q03")]
-colnames(education)[4:5] <- c("literate", "ed_any")
+education <- read_dta(file.path(dataPath, "sect2_hh_w1.dta")) %>%
+  select(household_id, individual_id, ea_id,
+         literate=hh_s2q02, ed_any=hh_s2q03)
+#education <- read_dta(file.path(dataPath, "sect2_hh_w1.dta")) 
+#education <- education[ c("household_id", "individual_id", "ea_id", "hh_s2q02", "hh_s2q03")]
+#colnames(education)[4:5] <- c("literate", "ed_any")
 
-frequencies(education$literate ,r.digits=1)
-frequencies(education$ed_any ,r.digits=1)
+HH12 <- left_join(HH11, education)
+frequencies(HH12$literate ,r.digits=1)
+frequencies(HH12$ed_any ,r.digits=1)
 
-education$literate <- toupper(as_factor(education$literate))
-education$ed_any <- toupper(as_factor(education$ed_any))
+HH12$literate <- toupper(as_factor(HH12$literate))
+HH12$ed_any <- toupper(as_factor(HH12$ed_any))
 
-frequencies(education$literate ,r.digits=1)
-frequencies(education$ed_any ,r.digits=1)
+frequencies(HH12$literate ,r.digits=1)
+frequencies(HH12$ed_any ,r.digits=1)
 
 # summarise the data: get sum of education
 # of household members 15-55 and number of
@@ -120,16 +121,31 @@ library(dplyr)
 #            family_size=n())
 
 #VL: revised
-HH11_x <- group_by(HH11, household_id) %>%
+HH11_x <- group_by(HH12, household_id) %>%
   summarise(N0005=sum(cage %in% "0-5"),
             N0615=sum(cage %in% "6-15"),
             N1555=sum(cage %in% "16-55"),
             N5600=sum(cage %in% "56+"),
+            family_size=n(),
             N0005w=sum(cage %in% "0-5" & sex %in% "FEMALE"),
             N0615w=sum(cage %in% "6-15" & sex %in% "FEMALE"),
             N1555w=sum(cage %in% "16-55" & sex %in% "FEMALE"),
             N5600w=sum(cage %in% "56+" & sex %in% "FEMALE"),
-            family_size=n())
+            literate_n=sum(literate %in% "YES"),
+            literate0615=sum(cage %in% "6-15" & literate %in% "YES"),
+            literate1655=sum(cage %in% "16-55" & literate %in% "YES"),
+            literate5600=sum(cage %in% "56+" & literate %in% "YES"),
+            literate0615w=sum(cage %in% "6-15" & literate %in% "YES" & sex %in% "FEMALE"),
+            literate1655w=sum(cage %in% "16-55" & literate %in% "YES" & sex %in% "FEMALE"),
+            literate5600w=sum(cage %in% "56+" & literate %in% "YES" & sex %in% "FEMALE"),
+            ed_any_n=sum(literate %in% "YES"),
+            ed_any0615=sum(cage %in% "6-15" & ed_any %in% "YES"),
+            ed_any1655=sum(cage %in% "16-55" & ed_any %in% "YES"),
+            ed_any5600=sum(cage %in% "56+" & ed_any %in% "YES"),
+            ed_any0615w=sum(cage %in% "6-15" & ed_any %in% "YES" & sex %in% "FEMALE"),
+            ed_any1655w=sum(cage %in% "16-55" & ed_any %in% "YES" & sex %in% "FEMALE"),
+            ed_any5600w=sum(cage %in% "56+" & ed_any %in% "YES" & sex %in% "FEMALE")
+  )
 frequencies(HH11_x$N0005 ,r.digits=1)
 frequencies(HH11_x$N0615 ,r.digits=1)
 frequencies(HH11_x$N1655 ,r.digits=1)
@@ -148,9 +164,15 @@ famdeath <- read_dta(file.path(dataPath, "sect8_hh_w1.dta")) %>%
   summarise(death=ifelse(any(death %in% 1), 1, 0))
 frequencies(famdeath$death ,r.digits=1)
 
+
+HH12_x <- filter(HH12, status %in% "HEAD")
+sociodem <- HH11_x[ c("household_id")]
 HH11 <- left_join(HH11, education) %>%
   left_join(HH11_x) %>%
   left_join(famdeath); rm(education, HH11_x, famdeath)
+sociodem <- left_join(sociodem, HH12_x)
+sociodem <- left_join(sociodem, HH11_x)
+sociodem <- left_join(sociodem, famdeath)
 
 #######################################
 ############### OUTPUT ################
@@ -276,6 +298,16 @@ crop <- read_dta(file.path(dataPath, "sect4_pp_w1.dta")) %>%
          cropping=pp_s4q02, month=pp_s4q12_a, crop_area=pp_s4q03,
          pest=pp_s4q06, herb=pp_s4q06, fung=pp_s4q07, seed_type=pp_s4q11,
         crop_name)
+
+#fert <- group_by(fert, holder_id, household_id, parcel_id, field_id) %>%
+#  summarise(N=sum(Qn, na.rm=TRUE), P=sum(Qp, na.rm=TRUE),
+#            UREA=ifelse(any(typ %in% "UREA"), 1, 0),
+#            DAP=ifelse(any(typ %in% "DAP"), 1, 0))
+
+# A view codes to make a comparison between crop_name and crop_code
+#crop_y <- crop[ c("crop_code", "crop_name")]
+#crop_y <- group_by(crop_y, crop_name, crop_code)
+#write.csv(crop_y, "cropname and codes.csv")
 
 crop$cropping <- as_factor(crop$cropping)
 crop$month <- toupper(as_factor(crop$month))
@@ -537,16 +569,19 @@ livestock$LS <- rowSums(livestock[,2:14])
 # -------------------------------------
 # community and location level joins
 
-ETH2011 <- left_join(location, com); rm(com, location)
+ETH2011 <- left_join(location, com)
+ETH2011HH <- left_join(location, com); rm(com, location)
 
 # -------------------------------------
 # household level joins
 
 ETH2011 <- left_join(HH11, ETH2011)     ; rm(HH11) 
-ETH2011 <- left_join(ETH2011, areaTotal); rm(areaTotal)
-ETH2011 <- left_join(ETH2011, housing)  ; rm(housing)
-ETH2011 <- left_join(ETH2011, tv)       ; rm(tv)
-ETH2011 <- left_join(ETH2011, livestock); rm(livestock)
+ETH2011 <- left_join(ETH2011, areaTotal)
+ETH2011HH <- left_join(ETH2011HH, sociodem)     ; rm(sociodem) 
+ETH2011HH <- left_join(ETH2011HH, areaTotal); rm(areaTotal)
+ETH2011HH <- left_join(ETH2011HH, housing)  ; rm(housing)
+ETH2011HH <- left_join(ETH2011HH, tv)       ; rm(tv)
+ETH2011HH <- left_join(ETH2011HH, livestock); rm(livestock)
 
 # -------------------------------------
 # parcel level joins

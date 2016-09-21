@@ -146,7 +146,7 @@ FNS2013 <- NUTR2013[ c("household_id", "FVS16") ]
 # ***************************************************************************************************
 # Columns correspond to list of food items!
 # sum fooditems into 12 foodgroups for FVS: columns correspond to list of food items!
-NUTR2013$cereals         <- 1*((NUTR2013$FI01_Enjera+NUTR2013$FI02_OtherCereals++NUTR2013$FI04_Pasta )  > 0 ) 
+NUTR2013$cereals         <- 1*((NUTR2013$FI01_Enjera+NUTR2013$FI02_OtherCereals+NUTR2013$FI04_Pasta )  > 0 ) 
 #NUTR2013$cereals         <- 1*((NUTR2013[ c("FI01_Enjera", "FI02_OtherCereals", "FI04_Pasta") ] )  > 0 ) 
 NUTR2013$rootsandtubers  <- 1*((NUTR2013$FI03_Potatoes+NUTR2013$FI16_KochoandBula )  > 0 ) 
 #NUTR2013$rootsandtubers  <- 1*((NUTR2013[ c("FI03_Potatoes", "FI16_KochoandBula") ] )  > 0 ) 

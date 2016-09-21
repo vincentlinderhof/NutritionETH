@@ -140,18 +140,18 @@ FNS2011 <- NUTR2011[ c("household_id", "FVS16") ]
 
 # Columns correspond to list of food items!
 # sum fooditems into 12 foodgroups for FVS: columns correspond to list of food items!
-NUTR2011$cereals         <- 1*((NUTR2011[ c("FI01_Enjera", "FI02_OtherCereals", "FI04_Pasta") ] )  > 0 ) 
-NUTR2011$rootsandtubers  <- 1*((NUTR2011[ c("FI03_Potatoes", "FI16_KochoandBula") ] )  > 0 ) 
-NUTR2011$vegetables      <- 1*((NUTR2011[ c("FI07_Vegetables") ] )  > 0 )
-NUTR2011$fruits          <- 1*((NUTR2011[ c("FI08_Fruits") ] )  > 0 )
-NUTR2011$meat            <- 1*((NUTR2011[ c("FI09_RedMeat", "FI10_Poultry")] )  > 0 ) 
-NUTR2011$eggs            <- 1*((NUTR2011[ c("FI11_Eggs") ] )  > 0 )
-NUTR2011$fish            <- 1*((NUTR2011[ c("FI12_Fish") ] )  > 0 )
-NUTR2011$pulsesandnuts   <- 1*((NUTR2011[ c("FI06_PulsesandNuts") ] )  > 0 )
-NUTR2011$dairyproducts   <- 1*((NUTR2011[ c("FI14_DairyProducts") ] )  > 0 )
-NUTR2011$oilsandfats     <- 1*((NUTR2011[ c("FI13_FatsandOils") ] )  > 0 )
-NUTR2011$condiments      <- 1*((NUTR2011[ c("FI15_Condiments") ] )  > 0 )
-NUTR2011$sugar           <- 1*((NUTR2011[ c("FI05_Sugar") ] )  > 0 )
+NUTR2011$cereals         <- 1*((rowSums(NUTR2011[ c("FI01_Enjera", "FI02_OtherCereals", "FI04_Pasta") ] ) ) > 0 ) 
+NUTR2011$rootsandtubers  <- 1*((rowSums(NUTR2011[ c("FI03_Potatoes", "FI16_KochoandBula") ] ))  > 0 ) 
+NUTR2011$vegetables      <- 1*((NUTR2011[ c("FI07_Vegetables") ] )  > 0 ) 
+NUTR2011$fruits          <- 1*((NUTR2011[ c("FI08_Fruits") ] )  > 0 ) 
+NUTR2011$meat            <- 1*((rowSums(NUTR2011[ c("FI09_RedMeat", "FI10_Poultry")] ) ) > 0 ) 
+NUTR2011$eggs            <- 1*((NUTR2011[ c("FI11_Eggs") ] )  > 0 ) 
+NUTR2011$fish            <- 1*((NUTR2011[ c("FI12_Fish") ] )  > 0 ) 
+NUTR2011$pulsesandnuts   <- 1*((NUTR2011[ c("FI06_PulsesandNuts") ] )  > 0 ) 
+NUTR2011$dairyproducts   <- 1*((NUTR2011[ c("FI14_DairyProducts") ] )  > 0 ) 
+NUTR2011$oilsandfats     <- 1*((NUTR2011[ c("FI13_FatsandOils") ] )  > 0 ) 
+NUTR2011$condiments      <- 1*((NUTR2011[ c("FI15_Condiments") ] )  > 0 ) 
+NUTR2011$sugar           <- 1*((NUTR2011[ c("FI05_Sugar") ] )  > 0 ) 
 
 #install.packages(Hmisc)
 #library(Hmisc)
@@ -160,11 +160,11 @@ NUTR2011$sugar           <- 1*((NUTR2011[ c("FI05_Sugar") ] )  > 0 )
 NUTR2011$DDS12 <- rowSums(NUTR2011[ c("cereals", "rootsandtubers", "vegetables",
                                           "fruits", "meat", "eggs", "fish",
                                           "pulsesandnuts", "dairyproducts", "oilsandfats",
-                                          "sugar","condiments")] )
-DDS2011 <- NUTR2011[ c("household_id", "DDS12") ]
+                                          "sugar","condiments")] ) 
+DDS2011 <- NUTR2011[ c("household_id", "DDS12") ] 
 
-FNS2011 <-left_join(FNS2011, DDS2011)
-rm(DDS2011)
+FNS2011 <-left_join(FNS2011, DDS2011) 
+rm(DDS2011) 
 
 #NUTR2011$DDS1200               <- rowSums(NUTR2011[19:30] )
 #summary(NUTR2011$DDS1200)
@@ -297,7 +297,7 @@ CSI2011 <- CSI2011[ c("household_id", "CSI", "rCSI")]
 FNS2011 <- left_join(FNS2011, CSI2011)
 
 saveRDS(FNS2011, "Data/FNS2011.rds")
-
+ETH2011HH <- left_join(ETH2011HH, FNS2011)
 
 # ***************************************************************************************************
 # Descriptive statistics of FNS indicators in 2011
@@ -350,9 +350,9 @@ plot(FNS2011$CSI, FNS2011$rCSI, main="Coherence between CSI and reduced CSI in 2
      xlab="CSI ", ylab="rCSI ", pch=19) 
 
 write.csv(ds_dds, "results/descriptives_dds.csv")
-write.csv(ds_fcs, "results/descriptives_dds.csv")
-write.csv(ds_csi, "results/descriptives_dds.csv")
-write.csv(ds_fvs, "results/descriptives_dds.csv")
+write.csv(ds_fcs, "results/descriptives_fcs.csv")
+write.csv(ds_csi, "results/descriptives_csi.csv")
+write.csv(ds_fvs, "results/descriptives_fvs.csv")
 
 ## Add it to the database
 # Household level
@@ -365,4 +365,5 @@ TZA2008 <- left_join(TZA2008, FVS); rm(FVS)
 TZA2008 <- left_join(TZA2008, FCSw); rm(FCSw)
 TZA2008 <- left_join(TZA2008, FCSu); rm(FCSu)
 TZA2008 <- left_join(TZA2008, CSI); rm(CSI)
-
+dd_dds
+dd_fvs
